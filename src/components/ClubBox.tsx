@@ -8,9 +8,10 @@ interface Props {
   clubType: string;
   campus: string;
   clubName: string;
+  handler?: () => void;
 }
 
-export default function ClubBox({id, clubType, campus, clubName }: Props) {
+export default function ClubBox({id, clubType, campus, clubName, handler }: Props) {
   const [isFav, setIsFav] = useState(false);
   const router = useRouter();
   const STORAGE_KEY = `favoriteClub-${id}`;
@@ -32,7 +33,10 @@ export default function ClubBox({id, clubType, campus, clubName }: Props) {
     if (!isFav === false) {
       localStorage.removeItem(STORAGE_KEY);
     }
-    window.location.reload();
+
+    if (handler) {
+      handler();
+    }
   }
   
   return (
@@ -42,7 +46,7 @@ export default function ClubBox({id, clubType, campus, clubName }: Props) {
           <p data-testid="description" className="text-xs">#{clubType} #{campus}</p>
           <h5 data-testid="clubName" className="text-lg font-semibold">{clubName}</h5>
         </div>
-        <button onClick={favoriteClubHandler}>
+        <button data-testid="favBtn" onClick={favoriteClubHandler}>
           <Star
             className="transition-colors duration-300"
             fill={`${isFav ? "#eab308" : "#fff"}`}
