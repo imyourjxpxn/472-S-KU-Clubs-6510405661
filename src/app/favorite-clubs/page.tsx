@@ -27,36 +27,25 @@ export default function page() {
     }, []);
 
     useEffect(() => {
-        fetch("/api/club")
-          .then((res) => res.json())
-          .then((data: Club[]) => {
-            setClubs(data);
-            setFilteredClubs(data);
-          })
-          .catch((error) => {
-            console.error("Error fetching clubs:", error);
-            setIsLoading(false);
-          });
-    }, []);
+      fetchClubs();
+    }, [searchTerm, sortOption]);
 
-    useEffect(() => {
-      if (!isLoading) {
-        let result = [...clubs];
-        if (searchTerm !== "") {
-          result = searchByClubName(result);
-        }
+    const fetchClubs = () => {
+      const searchParams = new URLSearchParams();
+      searchParams.set("search", searchTerm);
+      searchParams.set("sortType", sortOption);
 
-        result = sortByClubName(result);
-        setFilteredClubs(result);
-      }
-    }, [sortOption, searchTerm]);
-
-    const searchByClubName = (clubs: Club[]): Club[] => {
-        return clubs.filter((club) => club.clubName.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-
-    const sortByClubName = (clubs: Club[]): Club[] => {
-        return clubs.sort((a, b) => sortOption === "asc" ? a.clubName.localeCompare(b.clubName) : b.clubName.localeCompare(a.clubName));
+      fetch("/api/club?" + searchParams.toString())
+        .then((res) => res.json())
+        .then((data: Club[]) => {
+          setClubs(data);
+          setFilteredClubs(data);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching clubs:", error);
+          setIsLoading(false);
+        });
     }
     
     return (
@@ -94,13 +83,12 @@ export default function page() {
             </div>
           )}
         </div>
-        {/* Main content - Club Activities */}
+        {/* Main content -  Clubs*/}
         <div className="px-8 md:px-16 py-20 w-full">
           <Loading
             isLoading={isLoading}
             fallback={
               <div className="flex justify-between items-center mb-4">
-                <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
             }
@@ -153,12 +141,16 @@ export default function page() {
                         clubType={club.clubType}
                         campus={club.campus}
                         clubName={club.clubName}
+                        handler={() => {
+                          setIsLoading(true);
+                          fetchClubs()
+                        }}
                       />
                     )
                   );
                 })
               ) : (
-                <p className="text-gray-500">ไม่พบชมรมที่ค้นหา</p>
+                <p className="text-gray-500">ไม่พบชมรม</p>
               )}
             </Loading>
           </div>
