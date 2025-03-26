@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search");
   const selectedClubType = searchParams.get("selectedClubType");
   const selectedCampus = searchParams.get("selectedCampus");
+  const sortType = searchParams.get("sortType")
 
   const results = clubs.filter((club) => {
     let matchesSearch = true;
@@ -45,6 +46,13 @@ export async function GET(req: NextRequest) {
       club.campus === `วิทยาเขต${selectedCampus}`;
     return matchesSearch && matchesClubType && matchesCampus;
   });
+
+  if (sortType === "asc") {
+    results.sort((a, b) => a.clubName.localeCompare(b.clubName));
+  } else if (sortType === "desc") {
+    results.sort((a, b) => b.clubName.localeCompare(a.clubName));
+  }
+
   await new Promise((res) => setTimeout(res , 1000))
   return Response.json(results);
 }
