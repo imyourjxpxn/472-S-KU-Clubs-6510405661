@@ -1,6 +1,6 @@
 "use client";
 import Loading from '@/components/Loading';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react'
 import ClubBoxSkeleton from '@/components/ClubBoxSkeleton';
@@ -8,11 +8,15 @@ import ClubBox from '@/components/ClubBox';
 import { ActivitySkeleton } from '@/components/skeleton/activity-skeleton';
 import FilterSelected from '@/components/FilterSelected';
 import Club from '@/interfaces/Club';
+import { Skeleton } from '@/components/skeleton/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function page() {
     const [clubs, setClubs] = useState<Club[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [filteredClubs, setFilteredClubs] = useState<Club[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [sortOption, setSortOption] = useState<"asc" | "desc">("asc");
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -28,13 +32,32 @@ export default function page() {
           .then((data: Club[]) => {
             setClubs(data);
             setFilteredClubs(data);
-            setIsLoading(false);
           })
           .catch((error) => {
             console.error("Error fetching clubs:", error);
             setIsLoading(false);
           });
-    }, [])
+    }, []);
+
+    useEffect(() => {
+      if (!isLoading) {
+        let result = [...clubs];
+        if (searchTerm !== "") {
+          result = searchByClubName(result);
+        }
+
+        result = sortByClubName(result);
+        setFilteredClubs(result);
+      }
+    }, [sortOption, searchTerm]);
+
+    const searchByClubName = (clubs: Club[]): Club[] => {
+        return clubs.filter((club) => club.clubName.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    const sortByClubName = (clubs: Club[]): Club[] => {
+        return clubs.sort((a, b) => sortOption === "asc" ? a.clubName.localeCompare(b.clubName) : b.clubName.localeCompare(a.clubName));
+    }
     
     return (
       <div className="flex flex-col md:flex-row min-h-screen bg-gray-5">
@@ -73,35 +96,67 @@ export default function page() {
         </div>
         {/* Main content - Club Activities */}
         <div className="px-8 md:px-16 py-20 w-full">
-          <div className="flex justify-end mb-8">
-            <FilterSelected
-              placeholder="เรียงตามชื่อ"
-              items={[]}
-              onChange={function (value: string): void {
-                throw new Error("Function not implemented.");
-              }}
-              className="w-[60%] md:w-[40%] lg:w-[20%] rounded-xl"
-            />
-          </div>
+          <Loading
+            isLoading={isLoading}
+            fallback={
+              <div className="flex justify-between items-center mb-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            }
+          >
+            <div className="flex justify-between items-center mb-4 gap-x-2">
+              <div className="flex mt-4 gap-2 w-full border border-gray-900 bg-gray-100 rounded-lg p-2">
+                <Search />
+                <input
+                  className="flex-1 border-none focus:border-transparent focus:ring-0 focus:outline-none bg-transparent text-sm"
+                  type="search"
+                  placeholder="ค้นหาชมรมที่ชื่นชอบ"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="mt-3">
+                <Select value={sortOption} onValueChange={(value) => setSortOption(value as "asc" | "desc")}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="เรียงลำดับตาม" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="asc">
+                      เรียงตาม A-z/ก-ฮ
+                    </SelectItem>
+                    <SelectItem value="desc">
+                      เรียงตาม z-a ,ฮ-ก
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </Loading>
           <div className="grid auto-rows-max gap-3 grid-cols-1 md:grid-cols-2">
             <Loading
               isLoading={isLoading}
-              fallback={clubs.map((club) => (
-                <ClubBoxSkeleton key={club.id} />
-              ))}
+              fallback={Array.from({ length: 8 })
+                .fill("")
+                .map((_, i) => (
+                  <ClubBoxSkeleton key={i} />
+                ))}
             >
               {filteredClubs.length > 0 ? (
                 filteredClubs.map((club) => {
                   const isFav = localStorage.getItem(`favoriteClub-${club.id}`);
-                  return isFav && (
-                    <ClubBox
-                      key={club.id}
-                      id={club.id}
-                      clubType={club.clubType}
-                      campus={club.campus}
-                      clubName={club.clubName}
-                    />
-                  )})
+                  return (
+                    isFav && (
+                      <ClubBox
+                        key={club.id}
+                        id={club.id}
+                        clubType={club.clubType}
+                        campus={club.campus}
+                        clubName={club.clubName}
+                      />
+                    )
+                  );
+                })
               ) : (
                 <p className="text-gray-500">ไม่พบชมรมที่ค้นหา</p>
               )}
